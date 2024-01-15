@@ -1,3 +1,5 @@
+import { View, Button, ScrollView,StyleSheet, TextInput, Text, Alert } from 'react-native';
+
 
 const styles = StyleSheet.create({
   container: {
@@ -6,8 +8,14 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#00dfff',
     padding: 8,
     marginBottom: 16,
+    marginTop:10
+  },
+  errorText: {
+    color: 'red',
   },
 });
+
+export default styles 

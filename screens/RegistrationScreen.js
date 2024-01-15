@@ -6,6 +6,7 @@ import * as Yup from 'yup';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import CheckBox from '@react-native-community/checkbox';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RegistrationSchema = Yup.object().shape({
   uniqueID: Yup
@@ -24,7 +25,7 @@ const RegistrationSchema = Yup.object().shape({
   kvkkCheck: Yup.boolean().isTrue('KVKK Onayı zorunludur.').required(),
 
 });
-const MyForm = (data) => {
+const MyForm = () => {
   const { handleChange, handleBlur, handleSubmit, setFieldValue, setFieldError, values, touched, errors } = useFormikContext();
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,7 +48,6 @@ const MyForm = (data) => {
   const handleDateConfirm = (date) => {
     setFieldValue('birthDate', date);
     hideDatePicker();
-    console.log(date)
     setDate(date)
   };
   const handleCheckboxToggle = () => {
@@ -94,12 +94,13 @@ const MyForm = (data) => {
     setCountries(sortedCountries);
   };
   const handleCountryChange = async (event) => {
-    setSelectedCountry(event);
+
     const datasa = event;
     const filteredData = alldata
       .filter((item) => item.translations.tur.common === datasa)
       .map((item) => item.name.common);
-
+    setSelectedCountry(filteredData[0]);
+    await AsyncStorage.setItem('country', filteredData[0]);
     try {
       const response = await fetch(
         "https://countriesnow.space/api/v0.1/countries/cities",
@@ -118,7 +119,8 @@ const MyForm = (data) => {
       console.error("Error during fetch:", error);
     }
   };
-  const handleCityChange = (value) => {
+  const handleCityChange = async (value) => {
+    await AsyncStorage.setItem('city', value)
     setSelectedCity(value);
   };
 
@@ -283,7 +285,7 @@ const Registration = ({ navigation }) => {
 
   const handleImagePick = () => {
     const options = {
-      title: 'Select Avatar',
+      title: 'Profil Resmi Seçiniz',
       storageOptions: {
         skipBackup: true,
         path: 'images',
@@ -300,6 +302,29 @@ const Registration = ({ navigation }) => {
         setPhoto(firstAsset.uri);
       }
     });
+  };
+
+  const dataLad = async (values) => {
+    try {
+      console.log(values);
+
+      const dataToSave = {
+        fullName: values.fullName,
+        gender: values.gender,
+        phoneNumber: values.phoneNumber,
+        uniqueID: values.uniqueID,
+        birthDate: values.birthDate.toISOString(),
+        userPhoto: photo,
+      };
+      await Promise.all(
+        Object.entries(dataToSave).map(async ([key, value]) => {
+          await AsyncStorage.setItem(key, value);
+        })
+      );
+    } catch (error) {
+      console.error('Error saving data to AsyncStorage:', error);
+      Alert.alert('Error', 'An error occurred while saving data.');
+    }
   };
 
   return (
@@ -322,7 +347,7 @@ const Registration = ({ navigation }) => {
         }}
         validationSchema={RegistrationSchema}
         onSubmit={(values) => {
-          console.log('Form Values:', values);
+          dataLad(values);
           navigation.navigate('WorkAndOccupation');
         }}
       >

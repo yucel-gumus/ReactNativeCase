@@ -4,12 +4,11 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import DocumentPicker from 'react-native-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const App = ({ navigation }) => {
+import { NativeModules } from "react-native";
+const CVAndProjectScreen = ({ navigation }) => {
     const [cvFileName, setCvFileName] = useState('');
     const [showProjectForm, setShowProjectForm] = useState(false);
     const [projectFields, setProjectFields] = useState([{ id: 1, name: '', description: '' }]);
-
     const formik = useFormik({
         initialValues: {
             projectName: '',
@@ -35,11 +34,23 @@ const App = ({ navigation }) => {
             }),
         }),
         onSubmit: values => {
-            navigation.navigate('DashBoard')
+            saveData()
             Alert.alert('Kayıt İşlemi Başarılı');
-            console.log(formik.initialValues)
+            navigation.navigate('Dashboard');
+            navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
         },
     });
+
+    const saveData = async () => {
+        try {
+            const jsonData = JSON.stringify(projectFields);
+            await AsyncStorage.setItem('projectContent', jsonData);
+            NativeModules.DevSettings.reload();
+        } catch (error) {
+            console.error('Veriyi kaydetme sırasında bir hata oluştu:', error);
+        }
+    };
+
     const handleFilePick = async () => {
         try {
             const result = await DocumentPicker.pick({
@@ -50,7 +61,7 @@ const App = ({ navigation }) => {
                 formik.setFieldValue('cv', result[0].uri);
                 setCvFileName(result[0].name);
                 await AsyncStorage.setItem('cvFileName', result[0].name);
-
+                await AsyncStorage.setItem('cvUri', result[0].uri)
             } else {
                 Alert.alert('Hata', 'Lütfen PDF dosyası seçin.');
             }
@@ -91,7 +102,10 @@ const App = ({ navigation }) => {
     const resetProjectFields = () => {
         formik.setFieldValue('projectName', '');
         formik.setFieldValue('projectDescription', '');
+        setProjectFields([{ id: 1, name: '', description: '' }])
     };
+
+
     return (
         <View style={{ flex: 1, justifyContent: 'center', marginLeft: 5 }}>
             <TouchableOpacity onPress={handleFilePick}>
@@ -172,4 +186,4 @@ const styles = StyleSheet.create({
         color: 'red',
     },
 });
-export default App;
+export default CVAndProjectScreen;
